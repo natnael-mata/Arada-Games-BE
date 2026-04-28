@@ -1,0 +1,14 @@
+{
+  "name": "archerswebb-deploy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Single deployable launcher for Archers Web client and dedicated server",
+  "scripts": {
+    "start": "node start.js",
+    "start:prod": "NODE_ENV=production node start.js",
+    "health": "curl -fsS http://127.0.0.1:${WEB_PORT:-8080}/healthz"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

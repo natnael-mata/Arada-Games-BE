@@ -1,0 +1,9 @@
+nohup: ignoring input
+Web client running at http://0.0.0.0:8080/
+Health check available at http://0.0.0.0:8080/healthz
+Godot dedicated server started from ./server/server.x86_64
+[game-server] Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+[game-server] OpenGL API 4.6 (Core Profile) Mesa 23.2.1-1ubuntu3.1~22.04.3 - Compatibility - Using Device: Intel - Mesa Intel(R) HD Graphics 6000 (BDW GT3)
+[game-server] 
+[game-server] Starting Server...
+[game-server] exited code=0 signal=none
