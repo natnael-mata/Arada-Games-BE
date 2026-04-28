@@ -285,6 +285,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === 'POST' && pathname === '/api/logout') {
+      sendJson(res, 200, { ok: true, message: 'Logged out successfully.' });
+      return;
+    }
+
     sendNotFound(res);
   } catch (error) {
     console.error('Server error:', error);

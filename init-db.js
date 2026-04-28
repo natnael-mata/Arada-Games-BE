@@ -78,6 +78,13 @@ async function init() {
       ['admin', 'admin123', 'active']
     );
 
+    // Seed the user requested by the user for testing
+    console.log('Seeding test user...');
+    await db.query(
+      'INSERT INTO users (user_id, password, status) VALUES (?, ?, ?)',
+      ['251943016897', 'pass1234', 'active']
+    );
+
     console.log('Database initialization successful.');
     process.exit(0);
   } catch (error) {
