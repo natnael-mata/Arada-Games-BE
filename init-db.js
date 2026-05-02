@@ -6,6 +6,7 @@ async function init() {
     console.log('Initializing database...');
 
     // Drop tables for a clean start (be careful in production!)
+    await db.query('DROP TABLE IF EXISTS game_scores');
     await db.query('DROP TABLE IF EXISTS games');
     await db.query('DROP TABLE IF EXISTS contact_submissions');
     await db.query('DROP TABLE IF EXISTS users');
@@ -45,6 +46,13 @@ async function init() {
         user_id VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         status ENUM('active', 'inactive') DEFAULT 'active',
+        full_name VARCHAR(255),
+        nick_name VARCHAR(255),
+        sex VARCHAR(50),
+        email VARCHAR(255),
+        telegram_username VARCHAR(255),
+        address VARCHAR(255),
+        active_token VARCHAR(500),
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -74,15 +82,15 @@ async function init() {
     // Seed a default admin user
     console.log('Seeding admin user...');
     await db.query(
-      'INSERT INTO users (user_id, password, status) VALUES (?, ?, ?)',
-      ['admin', 'admin123', 'active']
+      'INSERT INTO users (user_id, password, status, full_name, nick_name, sex, email, telegram_username, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      ['admin', 'admin123', 'active', 'System Administrator', 'Admin', 'Male', 'admin@arada.com', '@arada_admin', 'HQ']
     );
 
     // Seed the user requested by the user for testing
     console.log('Seeding test user...');
     await db.query(
-      'INSERT INTO users (user_id, password, status) VALUES (?, ?, ?)',
-      ['251943016897', 'pass1234', 'active']
+      'INSERT INTO users (user_id, password, status, full_name, nick_name, sex, email, telegram_username, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      ['251943016897', 'pass1234', 'active', 'Test User', 'Tester', 'Male', 'test@example.com', '@tester_tg', 'Addis Ababa']
     );
 
     console.log('Database initialization successful.');

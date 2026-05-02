@@ -2,6 +2,9 @@ const http = require('http');
 const https = require('https');
 const { URL } = require('url');
 const db = require('./db');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'arada_super_secret_key_2026';
 
 const host = process.env.API_HOST || '0.0.0.0';
 const port = Number(process.env.API_PORT || 3000);
@@ -157,7 +160,7 @@ async function handleLogin(req, res) {
     }
 
     const [rows] = await db.query(
-      'SELECT id, user_id, status FROM users WHERE user_id = ? AND password = ?',
+      'SELECT user_id, full_name, nick_name, sex, status, email, telegram_username, address, active_token FROM users WHERE user_id = ? AND password = ?',
       [userId, password]
     );
 
@@ -179,13 +182,36 @@ async function handleLogin(req, res) {
       return;
     }
 
+    if (user.active_token) {
+      try {
+        jwt.verify(user.active_token, JWT_SECRET);
+        sendJson(res, 403, {
+          ok: false,
+          message: 'You are already logged in on another device. Please log out from that device first before logging in here.',
+        });
+        return;
+      } catch (err) {
+        // Token expired or invalid, proceed to login
+      }
+    }
+
+    const token = jwt.sign({ user_id: user.user_id }, JWT_SECRET, { expiresIn: '24h' });
+
+    await db.query('UPDATE users SET active_token = ? WHERE user_id = ?', [token, user.user_id]);
+
     sendJson(res, 200, {
       ok: true,
       message: 'Login successful.',
+      token: token,
       user: {
-        id: user.id,
         user_id: user.user_id,
-        status: user.status
+        full_name: user.full_name,
+        nick_name: user.nick_name,
+        gender: user.sex,
+        status: user.status,
+        email: user.email,
+        telegram_username: user.telegram_username,
+        address: user.address
       }
     });
   } catch (error) {
@@ -232,6 +258,17 @@ async function handleGameHealth(res, slug) {
   }
 }
 
+function verifyToken(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  const token = authHeader.split(' ')[1];
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (e) {
+    return null;
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const pathname = requestUrl.pathname;
@@ -271,7 +308,42 @@ const server = http.createServer(async (req, res) => {
 
     const healthMatch = pathname.match(/^\/api\/games\/([^/]+)\/health$/);
     if (req.method === 'GET' && healthMatch) {
+      if (!verifyToken(req)) {
+        sendJson(res, 401, { ok: false, message: 'Unauthorized' });
+        return;
+      }
       await handleGameHealth(res, healthMatch[1]);
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/profile') {
+      const decoded = verifyToken(req);
+      if (!decoded) {
+        sendJson(res, 401, { ok: false, message: 'Unauthorized' });
+        return;
+      }
+      const [rows] = await db.query(
+        'SELECT user_id, full_name, nick_name, sex, status, email, telegram_username, address FROM users WHERE user_id = ?',
+        [decoded.user_id]
+      );
+      if (rows.length === 0) {
+        sendJson(res, 404, { ok: false, message: 'User not found' });
+        return;
+      }
+      const user = rows[0];
+      sendJson(res, 200, {
+        ok: true,
+        user: {
+          user_id: user.user_id,
+          full_name: user.full_name,
+          nick_name: user.nick_name,
+          gender: user.sex,
+          status: user.status,
+          email: user.email,
+          telegram_username: user.telegram_username,
+          address: user.address
+        }
+      });
       return;
     }
 
@@ -286,6 +358,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && pathname === '/api/logout') {
+      const decoded = verifyToken(req);
+      if (decoded) {
+        await db.query('UPDATE users SET active_token = NULL WHERE user_id = ?', [decoded.user_id]);
+      }
       sendJson(res, 200, { ok: true, message: 'Logged out successfully.' });
       return;
     }

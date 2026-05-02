@@ -2,6 +2,9 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
+const jwt = require("jsonwebtoken");
+
+const JWT_SECRET = process.env.JWT_SECRET || 'arada_super_secret_key_2026';
 
 const rootDir = __dirname;
 const clientDir = path.join(rootDir, "client");
@@ -63,6 +66,25 @@ function serveClient(req, res) {
     });
     res.end();
     return;
+  }
+
+  if (reqPath === "/" || reqPath === "/index.html") {
+    const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const token = urlObj.searchParams.get("token");
+    
+    if (!token) {
+      res.writeHead(302, { "Location": "http://localhost:4200/landing" });
+      res.end();
+      return;
+    }
+    
+    try {
+      jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      res.writeHead(302, { "Location": "http://localhost:4200/landing" });
+      res.end();
+      return;
+    }
   }
 
   if (reqPath === "/") reqPath = "/index.html";
