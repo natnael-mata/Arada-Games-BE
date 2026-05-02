@@ -2,14 +2,12 @@
   "name": "arada-games-backend",
   "private": true,
   "scripts": {
-    "start": "node server.js",
-    "start:archers": "WEB_PORT=8081 node ArchersWebb/start.js",
-    "start:all": "concurrently \"npm run start\" \"npm run start:archers\""
+    "start": "concurrently --names \"API,ARCHERS\" --prefix-colors \"cyan,yellow\" \"node server.js\" \"WEB_PORT=8081 node ArchersWebb/start.js\"",
+    "start:api": "node server.js",
+    "start:archers": "WEB_PORT=8081 node ArchersWebb/start.js"
   },
   "dependencies": {
+    "concurrently": "^9.2.1",
     "mysql2": "^3.12.0"
-  },
-  "devDependencies": {
-    "concurrently": "^9.2.1"
   }
 }
