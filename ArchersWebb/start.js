@@ -15,6 +15,8 @@ let isShuttingDown = false;
 const webHost = process.env.WEB_HOST || "0.0.0.0";
 const webPort = Number(process.env.WEB_PORT || 8080);
 const shutdownTimeoutMs = Number(process.env.SHUTDOWN_TIMEOUT_MS || 10000);
+// Set to your public Angular URL in production, e.g. https://arada-games.com
+const angularUrl = process.env.ANGULAR_URL || "http://localhost:4200";
 
 const mimeTypes = {
   ".html": "text/html",
@@ -73,7 +75,7 @@ function serveClient(req, res) {
     const token = urlObj.searchParams.get("token");
     
     if (!token) {
-      res.writeHead(302, { "Location": "http://localhost:4200/landing" });
+      res.writeHead(302, { "Location": `${angularUrl}/landing` });
       res.end();
       return;
     }
@@ -81,7 +83,7 @@ function serveClient(req, res) {
     try {
       jwt.verify(token, JWT_SECRET);
     } catch (err) {
-      res.writeHead(302, { "Location": "http://localhost:4200/landing" });
+      res.writeHead(302, { "Location": `${angularUrl}/landing` });
       res.end();
       return;
     }

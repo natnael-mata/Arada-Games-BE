@@ -53,7 +53,24 @@ async function init() {
         telegram_username VARCHAR(255),
         address VARCHAR(255),
         active_token VARCHAR(500),
+        active_device_id VARCHAR(255),
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create game_scores table
+    await db.query(`
+      CREATE TABLE game_scores (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        nick_name VARCHAR(255),
+        score INT DEFAULT 0,
+        game_mode VARCHAR(50),
+        difficulty VARCHAR(50),
+        moves_taken INT,
+        result VARCHAR(50),
+        playedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
       )
     `);
 
