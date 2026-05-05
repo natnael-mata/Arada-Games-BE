@@ -10,6 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'arada_super_secret_key_2026';
 const host = process.env.API_HOST || '0.0.0.0';
 const port = Number(process.env.API_PORT || 3000);
 const archersWebUrl = process.env.ARCHERS_WEB_URL || 'http://localhost:8081/';
+const archersPublicUrl = process.env.ARCHERS_PUBLIC_URL || '/api/archerswebb/';
 const archersHealthUrl =
   process.env.ARCHERS_HEALTH_URL || new URL('healthz', archersWebUrl).toString();
 const corsOrigin = process.env.CORS_ORIGIN || '*';
@@ -79,6 +80,8 @@ function sendNotFound(res) {
 }
 
 function formatGame(row) {
+  const launchUrl = row.slug === 'archerswebb' ? archersPublicUrl : row.launchUrl;
+
   return {
     slug: row.slug,
     name: row.name,
@@ -89,7 +92,7 @@ function formatGame(row) {
     rating: row.rating,
     launch: {
       type: row.launchType,
-      url: row.launchUrl,
+      url: launchUrl,
       requiresHealthCheck: !!row.requiresHealthCheck,
     },
   };
@@ -159,6 +162,41 @@ function probeJson(url) {
     });
     request.on('error', reject);
   });
+}
+
+function proxyArchersWeb(req, res, pathname, requestUrl) {
+  const targetPath = pathname.replace(/^\/api\/archerswebb|^\/archerswebb/, '') || '/';
+  const targetUrl = new URL(targetPath + requestUrl.search, archersWebUrl);
+  const client = targetUrl.protocol === 'https:' ? https : http;
+
+  const proxyReq = client.request(
+    targetUrl,
+    {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: targetUrl.host,
+      },
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 502, {
+        ...proxyRes.headers,
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+      });
+      proxyRes.pipe(res);
+    }
+  );
+
+  proxyReq.on('error', (error) => {
+    console.error('ArchersWebb proxy error:', error);
+    sendJson(res, 503, {
+      ok: false,
+      message: 'ArchersWebb is unavailable. Make sure the ArchersWebb process is running with the API.',
+    });
+  });
+
+  req.pipe(proxyReq);
 }
 
 async function handleContact(req, res) {
@@ -754,6 +792,20 @@ const server = http.createServer(async (req, res) => {
   const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const pathname = requestUrl.pathname;
 
+  if (pathname === '/api/archerswebb' || pathname === '/archerswebb') {
+    const publicPrefix = pathname.startsWith('/api/') ? '/api/archerswebb/' : '/archerswebb/';
+    res.writeHead(302, {
+      Location: `${publicPrefix}${requestUrl.search}`,
+    });
+    res.end();
+    return;
+  }
+
+  if (pathname.startsWith('/api/archerswebb/') || pathname.startsWith('/archerswebb/')) {
+    proxyArchersWeb(req, res, pathname, requestUrl);
+    return;
+  }
+
   if (req.method === 'OPTIONS') {
     sendJson(res, 204, {});
     return;
@@ -767,6 +819,7 @@ const server = http.createServer(async (req, res) => {
         service: 'arada-games-api',
         database,
         archersWebUrl,
+        archersPublicUrl,
       });
       return;
     }

@@ -76,7 +76,7 @@ async function init() {
 
     // Seed games
     console.log('Seeding games...');
-    const games = createGames({ archersWebUrl: 'http://localhost:8081/' });
+    const games = createGames({ archersWebUrl: process.env.ARCHERS_PUBLIC_URL || '/api/archerswebb/' });
     
     for (const game of games) {
       await db.query(

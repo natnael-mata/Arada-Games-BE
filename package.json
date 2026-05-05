@@ -4,7 +4,8 @@
   "scripts": {
     "start": "concurrently --names \"API,ARCHERS\" --prefix-colors \"cyan,yellow\" \"node server.js\" \"WEB_PORT=8081 node ArchersWebb/start.js\"",
     "start:api": "node server.js",
-    "start:archers": "WEB_PORT=8081 node ArchersWebb/start.js"
+    "start:archers": "WEB_PORT=8081 node ArchersWebb/start.js",
+    "start:server": "WEB_PORT=8081 node ArchersWebb/start.js"
   },
   "dependencies": {
     "concurrently": "^9.2.1",
