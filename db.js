@@ -1,10 +1,10 @@
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'admin',
-  password: process.env.DB_PASSWORD || 'Rainbow##321',
+  host: process.env.DB_HOST || 'arada-games.db-14.svc.cluster.local',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'admin_arada_games',
+  password: process.env.DB_PASSWORD || 'J$ZUDZ7G4qf3Y&H5jD#9W*452^9tBuP4',
   database: process.env.DB_NAME || 'arada_games',
   waitForConnections: true,
   connectionLimit: 10,
