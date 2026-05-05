@@ -14,6 +14,16 @@ const archersHealthUrl =
   process.env.ARCHERS_HEALTH_URL || new URL('healthz', archersWebUrl).toString();
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 
+const DB_CONNECTION_ERROR_CODES = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'ER_ACCESS_DENIED_ERROR',
+  'ER_BAD_DB_ERROR',
+]);
+
 function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json',
@@ -22,6 +32,43 @@ function sendJson(res, statusCode, payload) {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
   res.end(JSON.stringify(payload));
+}
+
+async function checkDatabase() {
+  try {
+    await db.query('SELECT 1');
+    return { ok: true };
+  } catch (error) {
+    console.error('Database health check failed:', error);
+    return {
+      ok: false,
+      code: error.code || 'DB_HEALTH_CHECK_FAILED',
+    };
+  }
+}
+
+function getLoginErrorResponse(error) {
+  if (DB_CONNECTION_ERROR_CODES.has(error.code)) {
+    return {
+      statusCode: 503,
+      message: 'Database connection failed. Check the deployed DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME settings.',
+    };
+  }
+
+  if (
+    error.code === 'ER_BAD_FIELD_ERROR' &&
+    /active_token|active_device_id/i.test(error.sqlMessage || error.message || '')
+  ) {
+    return {
+      statusCode: 500,
+      message: 'The deployed database is missing login session columns. Run the users table migration for active_token and active_device_id.',
+    };
+  }
+
+  return {
+    statusCode: 500,
+    message: 'An error occurred during login.',
+  };
 }
 
 function sendNotFound(res) {
@@ -223,9 +270,10 @@ async function handleLogin(req, res) {
     });
   } catch (error) {
     console.error('Login error:', error);
-    sendJson(res, 500, {
+    const loginError = getLoginErrorResponse(error);
+    sendJson(res, loginError.statusCode, {
       ok: false,
-      message: 'An error occurred during login.',
+      message: loginError.message,
     });
   }
 }
@@ -713,9 +761,11 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (req.method === 'GET' && pathname === '/api/health') {
-      sendJson(res, 200, {
-        ok: true,
+      const database = await checkDatabase();
+      sendJson(res, database.ok ? 200 : 503, {
+        ok: database.ok,
         service: 'arada-games-api',
+        database,
         archersWebUrl,
       });
       return;
