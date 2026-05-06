@@ -6,13 +6,11 @@ const jwt = require('jsonwebtoken');
 const { WebSocketServer, WebSocket } = require('ws');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'arada_super_secret_key_2026';
-
-const host = process.env.API_HOST || '0.0.0.0';
-const port = Number(process.env.API_PORT || 3000);
+const host = '0.0.0.0'; // Bind to all interfaces
+const port = Number(process.env.PORT || process.env.API_PORT || 3000);
 const archersWebUrl = process.env.ARCHERS_WEB_URL || 'http://localhost:8081/';
-const archersPublicUrl = process.env.ARCHERS_PUBLIC_URL || '/api/archerswebb/';
-const archersHealthUrl =
-  process.env.ARCHERS_HEALTH_URL || new URL('healthz', archersWebUrl).toString();
+const archersPublicUrl = '/api/archerswebb/';
+const archersHealthUrl = new URL('healthz', archersWebUrl).toString();
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 
 const DB_CONNECTION_ERROR_CODES = new Set([

@@ -2,10 +2,10 @@ require('dotenv').config();
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'admin_arada_games',
-  password: process.env.DB_PASSWORD || 'J$ZUDZ7G4qf3Y&H5jD#9W*452^9tBuP4',
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || 'arada_games',
   waitForConnections: true,
   connectionLimit: 10,
