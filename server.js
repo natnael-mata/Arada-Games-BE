@@ -273,7 +273,7 @@ async function handleLogin(req, res) {
     if (user.active_token) {
       try {
         jwt.verify(user.active_token, JWT_SECRET);
-        
+
         // If the device_id matches, we allow re-login (e.g. browser was closed)
         if (user.active_device_id && user.active_device_id !== deviceId) {
           sendJson(res, 403, {
@@ -346,7 +346,7 @@ async function handleGameHealth(res, slug) {
       game: game.slug,
       launchUrl: game.launch.url,
       details:
-        'ArchersWebb is unavailable. Start it with `npm start` or `npm run start:archers`.',
+        `ArchersWebb is unavailable (${error.message}). Start it with npm start or npm run start:archers.`,
     });
   }
 }
@@ -1007,7 +1007,7 @@ server.on('upgrade', (request, socket, head) => {
   } else if (pathname === '/api/archerswebb/ws' || pathname === '/archerswebb/ws') {
     // Proxy to Godot dedicated server for ArchersWebb (port 9090)
     console.log('Proxying ArchersWebb WebSocket to port 9090');
-    
+
     const targetSocket = net.connect(9090, '127.0.0.1', () => {
       // Reconstruct the original HTTP upgrade request for the target
       let reqStr = `${request.method} ${request.url} HTTP/${request.httpVersion}\r\n`;
@@ -1015,10 +1015,10 @@ server.on('upgrade', (request, socket, head) => {
         reqStr += `${key}: ${value}\r\n`;
       }
       reqStr += '\r\n';
-      
+
       targetSocket.write(reqStr);
       targetSocket.write(head);
-      
+
       socket.pipe(targetSocket).pipe(socket);
     });
 
@@ -1026,7 +1026,7 @@ server.on('upgrade', (request, socket, head) => {
       console.error('ArchersWebb WS Proxy Error:', err);
       socket.destroy();
     });
-    
+
     socket.on('error', () => targetSocket.destroy());
   } else {
     socket.destroy();
