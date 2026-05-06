@@ -973,25 +973,64 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-// WebSocket Server — attach to the same HTTP server
-const wss = new WebSocketServer({ server });
+// ===========================
+// WebSocket Multi-Game Routing
+// ===========================
+
+// 1. Initialize XO WebSocket server in noServer mode
+const wss = new WebSocketServer({ noServer: true });
 
 wss.on('connection', (ws) => {
-  console.log('WebSocket client connected');
-
-  ws.on('message', (data) => {
-    handleWsMessage(ws, data.toString());
-  });
-
+  console.log('XO WebSocket client connected');
+  ws.on('message', (data) => handleWsMessage(ws, data.toString()));
   ws.on('close', () => {
-    console.log('WebSocket client disconnected');
+    console.log('XO WebSocket client disconnected');
     handlePlayerLeave(ws);
   });
-
   ws.on('error', (err) => {
-    console.error('WebSocket error:', err);
+    console.error('XO WebSocket error:', err);
     handlePlayerLeave(ws);
   });
+});
+
+// 2. Handle Upgrade requests for both games
+const net = require('net');
+
+server.on('upgrade', (request, socket, head) => {
+  const pathname = request.url.split('?')[0];
+
+  if (pathname === '/api/ws') {
+    // Route to XO game logic
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else if (pathname === '/api/archerswebb/ws' || pathname === '/archerswebb/ws') {
+    // Proxy to Godot dedicated server for ArchersWebb (port 9090)
+    console.log('Proxying ArchersWebb WebSocket to port 9090');
+    
+    const targetSocket = net.connect(9090, '127.0.0.1', () => {
+      // Reconstruct the original HTTP upgrade request for the target
+      let reqStr = `${request.method} ${request.url} HTTP/${request.httpVersion}\r\n`;
+      for (const [key, value] of Object.entries(request.headers)) {
+        reqStr += `${key}: ${value}\r\n`;
+      }
+      reqStr += '\r\n';
+      
+      targetSocket.write(reqStr);
+      targetSocket.write(head);
+      
+      socket.pipe(targetSocket).pipe(socket);
+    });
+
+    targetSocket.on('error', (err) => {
+      console.error('ArchersWebb WS Proxy Error:', err);
+      socket.destroy();
+    });
+    
+    socket.on('error', () => targetSocket.destroy());
+  } else {
+    socket.destroy();
+  }
 });
 
 server.listen(port, host, () => {
