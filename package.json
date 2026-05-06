@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.12.0",
     "ws": "^8.20.0"
