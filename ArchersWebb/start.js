@@ -129,7 +129,7 @@ function startDedicatedServer() {
 
   ensureExecutable(dedicatedServerPath);
 
-  const child = spawn(dedicatedServerPath, [], {
+  const child = spawn(dedicatedServerPath, ["--headless"], {
     cwd: serverDir,
     env: {
       ...process.env,
