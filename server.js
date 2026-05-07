@@ -1044,7 +1044,8 @@ server.on('upgrade', (request, socket, head) => {
     socket.on('error', () => targetSocket.destroy());
   } else {
     socket.destroy();
-// ===========================
+  }
+});
 // Auto-start ArchersWebb if not running
 // ===========================
 const archersStartScript = path.join(__dirname, 'ArchersWebb', 'start.js');
