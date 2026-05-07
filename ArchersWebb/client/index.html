@@ -109,6 +109,27 @@ body {
 			<div id="status-notice"></div>
 		</div>
 
+		<script>
+(function() {
+    const OriginalWebSocket = window.WebSocket;
+    window.WebSocket = function(url, protocols) {
+        if (typeof url === 'string' && (url.includes('localhost:9090') || url.includes('127.0.0.1:9090'))) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const newUrl = protocol + '//' + window.location.host + '/api/archerswebb/ws';
+            console.log('Intercepted WebSocket connection. Redirecting from localhost:9090 to:', newUrl);
+            return new OriginalWebSocket(newUrl, protocols);
+        }
+        return new OriginalWebSocket(url, protocols);
+    };
+    window.WebSocket.prototype = OriginalWebSocket.prototype;
+    // Copy static methods
+    for (const key in OriginalWebSocket) {
+        if (typeof OriginalWebSocket[key] === 'function') {
+            window.WebSocket[key] = OriginalWebSocket[key];
+        }
+    }
+})();
+		</script>
 		<script src="index.js"></script>
 		<script>
 const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":695004,"index.wasm":38034280},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
