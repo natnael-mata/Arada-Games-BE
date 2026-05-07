@@ -141,8 +141,13 @@ function startDedicatedServer() {
   child.stdout.on("data", (chunk) => {
     process.stdout.write(`[game-server] ${chunk}`);
   });
+
   child.stderr.on("data", (chunk) => {
     process.stderr.write(`[game-server] ${chunk}`);
+  });
+
+  child.on("error", (err) => {
+    console.error(`[game-server] Failed to start process: ${err.message}`);
   });
 
   child.on("exit", (code, signal) => {
@@ -160,9 +165,9 @@ const webServer = http.createServer(serveClient);
 const dedicatedServer = startDedicatedServer();
 
 webServer.listen(webPort, webHost, () => {
-  console.log(`Web client running at http://${webHost}:${webPort}/`);
-  console.log(`Health check available at http://${webHost}:${webPort}/healthz`);
-  console.log("Godot dedicated server started from ./server/server.x86_64");
+  console.log(`[ARCHERS] Web client running at http://${webHost}:${webPort}/`);
+  console.log(`[ARCHERS] Health check available at http://${webHost}:${webPort}/healthz`);
+  console.log(`[ARCHERS] Godot dedicated server started from ${dedicatedServerPath} (PID: ${dedicatedServer.pid})`);
 });
 
 function shutdown() {

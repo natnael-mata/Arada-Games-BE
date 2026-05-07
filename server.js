@@ -8,7 +8,7 @@ const { WebSocketServer, WebSocket } = require('ws');
 const JWT_SECRET = process.env.JWT_SECRET || 'arada_super_secret_key_2026';
 const host = '0.0.0.0'; // Bind to all interfaces
 const port = Number(process.env.PORT || process.env.API_PORT || 3000);
-const archersWebUrl = process.env.ARCHERS_WEB_URL || 'http://localhost:8081/';
+const archersWebUrl = process.env.ARCHERS_WEB_URL || 'http://127.0.0.1:8081/';
 const archersPublicUrl = '/api/archerswebb/';
 const archersHealthUrl = new URL('healthz', archersWebUrl).toString();
 const corsOrigin = process.env.CORS_ORIGIN || '*';
@@ -346,8 +346,16 @@ async function handleGameHealth(res, slug) {
       launchUrl: game.launch.url,
     });
   } catch (error) {
-    const errorMessage = error.message || 'Unknown error';
-    console.error(`Game health check failed for ${slug}:`, errorMessage);
+    let errorMessage = error.message;
+    if (!errorMessage) {
+      errorMessage = error.code ? `Error Code: ${error.code}` : JSON.stringify(error);
+    }
+    if (!errorMessage || errorMessage === '{}') {
+      errorMessage = 'No error message provided by system';
+    }
+    
+    console.error(`Game health check failed for ${slug}:`, error);
+    
     sendJson(res, 503, {
       ok: false,
       game: game.slug,
