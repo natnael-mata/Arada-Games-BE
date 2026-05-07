@@ -143,22 +143,29 @@ function probeJson(url) {
         const body = Buffer.concat(chunks).toString('utf8');
 
         if (response.statusCode && response.statusCode >= 400) {
-          reject(new Error(`Upstream responded with status ${response.statusCode}`));
+          const error = new Error(`Upstream responded with status ${response.statusCode}`);
+          error.statusCode = response.statusCode;
+          error.body = body;
+          reject(error);
           return;
         }
 
         try {
           resolve(body ? JSON.parse(body) : {});
         } catch (error) {
-          reject(error);
+          console.error(`Failed to parse JSON from ${url}:`, body);
+          reject(new Error(`Invalid JSON response from upstream: ${error.message}`));
         }
       });
     });
 
     request.on('timeout', () => {
-      request.destroy(new Error('Health check timed out'));
+      request.destroy(new Error('Health check timed out after 3000ms'));
     });
-    request.on('error', reject);
+    request.on('error', (error) => {
+      console.error(`Probe error for ${url}:`, error.message || error);
+      reject(error);
+    });
   });
 }
 
@@ -339,12 +346,14 @@ async function handleGameHealth(res, slug) {
       launchUrl: game.launch.url,
     });
   } catch (error) {
+    const errorMessage = error.message || 'Unknown error';
+    console.error(`Game health check failed for ${slug}:`, errorMessage);
     sendJson(res, 503, {
       ok: false,
       game: game.slug,
       launchUrl: game.launch.url,
       details:
-        `ArchersWebb is unavailable (${error.message}). Start it with npm start or npm run start:archers.`,
+        `ArchersWebb is unavailable (${errorMessage}). Start it with npm start or npm run start:archers.`,
     });
   }
 }
@@ -842,10 +851,6 @@ const server = http.createServer(async (req, res) => {
 
     const healthMatch = pathname.match(/^\/api\/games\/([^/]+)\/health$/);
     if (req.method === 'GET' && healthMatch) {
-      if (!verifyToken(req)) {
-        sendJson(res, 401, { ok: false, message: 'Unauthorized' });
-        return;
-      }
       await handleGameHealth(res, healthMatch[1]);
       return;
     }
