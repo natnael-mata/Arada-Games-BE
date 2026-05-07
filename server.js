@@ -4,6 +4,9 @@ const { URL } = require('url');
 const db = require('./db');
 const jwt = require('jsonwebtoken');
 const { WebSocketServer, WebSocket } = require('ws');
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'arada_super_secret_key_2026';
 const host = '0.0.0.0'; // Bind to all interfaces
@@ -1041,8 +1044,22 @@ server.on('upgrade', (request, socket, head) => {
     socket.on('error', () => targetSocket.destroy());
   } else {
     socket.destroy();
-  }
-});
+// ===========================
+// Auto-start ArchersWebb if not running
+// ===========================
+const archersStartScript = path.join(__dirname, 'ArchersWebb', 'start.js');
+if (fs.existsSync(archersStartScript)) {
+  console.log('Detected ArchersWebb, starting game server...');
+  const archersProcess = spawn('node', [archersStartScript], {
+    env: { ...process.env, WEB_PORT: '8081' },
+    stdio: 'inherit',
+    detached: false
+  });
+
+  archersProcess.on('error', (err) => {
+    console.error('Failed to start ArchersWebb auto-launcher:', err);
+  });
+}
 
 server.listen(port, host, () => {
   console.log(`API running at http://${host}:${port}`);
